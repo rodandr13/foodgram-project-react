@@ -36,7 +36,7 @@ class UserViewSet(UserViewSet):
     pagination_class = LimitPageNumberPagination
     permission_classes = (AuthorStaffOrReadOnly,)
 
-    @action(methods=('get',), detail=False)
+    @action(methods=('get', 'post'), detail=False)
     def subscriptions(self, request):
         print('++++++++++++')
         print('test2')
@@ -50,7 +50,7 @@ class UserViewSet(UserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(methods=('get','delete'), detail=True)
+    @action(methods=('get', 'post', 'delete'), detail=True)
     def subscribe(self, request, id):
         print('test')
         user = request.user
@@ -104,7 +104,7 @@ class RecipeViewSet(ModelViewSet):
             queryset = queryset.exclude(favorite=user.id)
         return queryset
 
-    @action(detail=True, methods=["get", "delete"], )
+    @action(detail=True, methods=["get", 'post', "delete"], )
     def favorite(self, request, pk=None):
         user = request.user
         if user.is_anonymous:
@@ -124,7 +124,7 @@ class RecipeViewSet(ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['get', 'delete'],)
+    @action(detail=True, methods=['get', 'post', 'delete'],)
     def shopping_cart(self, request, pk):
         user = request.user
         if user.is_anonymous:
