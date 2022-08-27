@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from recipes.models import Ingredient, Tag, Recipe, IngredientInRecipe
 from .serializers import TagSerializer, IngredientSerializer, UserSerializer, RecipeSerializer, FavoriteCartRecipeSerializer, SubscribeSerializer
 from .permissions import AdminOrReadOnly, AuthorStaffOrReadOnly
+from .pagination import LimitPageNumberPagination
 from djoser.views import UserViewSet
 
 User = get_user_model()
@@ -32,6 +33,7 @@ class UserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     add_serializer = SubscribeSerializer
+    pagination_class = LimitPageNumberPagination
 
     @action(methods=('get',), detail=False)
     def subscriptions(self, request):
@@ -69,11 +71,13 @@ class UserViewSet(UserViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
+
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     #permission_classes = (AuthorStaffOrReadOnly,)
     add_serializer = FavoriteCartRecipeSerializer
+    pagination_class = LimitPageNumberPagination
 
     def get_queryset(self):
         queryset = self.queryset
