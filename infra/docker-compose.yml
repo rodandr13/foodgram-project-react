@@ -1,17 +1,51 @@
 version: '3.3'
+
+volumes:
+  static_value:
+  media_value:
+  result_build:
+  postgres_data:
+  redoc:
+
+
 services:
 
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+  db:
+    image: postgres:12.4
     volumes:
-      - ../frontend/:/app/result_build/
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+
+  backend:
+    image: andr13/backend_foodgram:latest
+    restart: always
+    volumes:
+      - static_value:/app/static/
+      - media_value:/app/media/
+      - redoc:/app/api/docs/
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+
+  frontend:
+    image: andr13/frontent_foodgram:latest
+    volumes:
+      - result_build:/app/result_build/build/
+
   nginx:
     image: nginx:1.19.3
     ports:
-      - "80:80"
+      - 80:80
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
+      - static_value:/static/
+      - media_value:/media/
+      - result_build:/usr/share/nginx/html/
+      - redoc:/usr/share/nginx/html/api/docs/
+    depends_on:
+      - backend
+      - frontend
+    env_file:
+      - ./.env
