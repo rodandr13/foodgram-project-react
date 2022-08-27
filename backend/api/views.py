@@ -34,6 +34,7 @@ class UserViewSet(UserViewSet):
     serializer_class = UserSerializer
     add_serializer = SubscribeSerializer
     pagination_class = LimitPageNumberPagination
+    permission_classes = (AuthorStaffOrReadOnly,)
 
     @action(methods=('get',), detail=False)
     def subscriptions(self, request):
@@ -75,7 +76,7 @@ class UserViewSet(UserViewSet):
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    #permission_classes = (AuthorStaffOrReadOnly,)
+    permission_classes = (AuthorStaffOrReadOnly,)
     add_serializer = FavoriteCartRecipeSerializer
     pagination_class = LimitPageNumberPagination
 
