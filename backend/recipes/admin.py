@@ -5,7 +5,12 @@ from .models import IngredientInRecipe, Tag, Recipe, Ingredient
 EMPTY_MESSAGE = '-пусто-'
 
 
-class IngredientInRecipeAdmin(admin.TabularInline):
+class IngredientInRecipeInline(admin.TabularInline):
+    model = IngredientInRecipe
+
+
+@admin.register(IngredientInRecipe)
+class IngredientInRecipeAdmin(admin.ModelAdmin):
     model = IngredientInRecipe
 
 
@@ -23,7 +28,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_display = ('name', 'author',)
     search_fields = ('author', 'name', 'tags',)
     empty_value_display = EMPTY_MESSAGE
-    inlines = (IngredientInRecipeAdmin,)
+    inlines = (IngredientInRecipeInline,)
 
 
 @admin.register(Tag)

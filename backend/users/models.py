@@ -25,6 +25,7 @@ class CustomUser(AbstractUser):
         to='self',
         verbose_name='Подписки',
         related_name='subscribers',
+        symmetrical=False,
     )
 
     class Meta:

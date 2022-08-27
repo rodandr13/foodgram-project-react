@@ -76,7 +76,9 @@ class Recipe(models.Model):
     )
     image = models.ImageField(
         'Фото блюда',
-        upload_to='static/recipes/',
+        upload_to='media/',
+        blank=True,
+        null=True,
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -92,11 +94,13 @@ class Recipe(models.Model):
         User,
         verbose_name='В избранном',
         related_name='favorites',
+        blank=True,
     )
     cart = models.ManyToManyField(
         User,
         verbose_name='Корзина',
         related_name='carts',
+        blank=True,
     )
     pub_date = models.DateTimeField(
         'Дата публикации',
@@ -140,8 +144,8 @@ class IngredientInRecipe(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Ингредиент'
-        verbose_name_plural = 'Ингредиенты'
+        verbose_name = 'Ингредиент связанный'
+        verbose_name_plural = 'Ингредиенты связанные'
         ordering = ['-id']
 
     def __str__(self):
