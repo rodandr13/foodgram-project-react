@@ -2,24 +2,27 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 
+MAX_LEN_CHARFIELD = 200
+
+
 class CustomUser(AbstractUser):
     email = models.EmailField(
         'Email',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
         unique=True,
     )
     username = models.CharField(
         'Юзернейм',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
         unique=True,
     )
     first_name = models.CharField(
         'Имя',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
     )
     last_name = models.CharField(
         'Фамилия',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
     )
     subscribe = models.ManyToManyField(
         to='self',
