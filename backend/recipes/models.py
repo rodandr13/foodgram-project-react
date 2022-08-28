@@ -3,21 +3,28 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 User = get_user_model()
+MAX_LEN_CHARFIELD = 200
 
 
 class Ingredient(models.Model):
     name = models.CharField(
         'Название ингредиента',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
     )
     measurement_unit = models.CharField(
         'Единица измерения',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
     )
 
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='unique_ingredients'
+            ),
+        )
 
     def __str__(self):
         return f'{self.name} {self.measurement_unit}'
@@ -26,7 +33,7 @@ class Ingredient(models.Model):
 class Tag(models.Model):
     name = models.CharField(
         'Название тега',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
     )
     color = models.CharField(
         'Цвет HEX',
@@ -34,7 +41,7 @@ class Tag(models.Model):
     )
     slug = models.SlugField(
         'Слаг тега',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
         unique=True,
     )
 
@@ -50,7 +57,7 @@ class Tag(models.Model):
 class Recipe(models.Model):
     name = models.CharField(
         'Название рецепта',
-        max_length=200,
+        max_length=MAX_LEN_CHARFIELD,
     )
     author = models.ForeignKey(
         User,
@@ -111,9 +118,15 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ('-pub_date',)
+        constraints = (
+            models.UniqueConstraint(
+                fields=('name', 'author'),
+                name='unique_recipe'
+            ),
+        )
 
     def __str__(self):
-        return f'{self.name}. {self.author.email}'
+        return f'{self.name}'
 
 
 class IngredientInRecipe(models.Model):
@@ -147,6 +160,12 @@ class IngredientInRecipe(models.Model):
         verbose_name = 'Ингредиент связанный'
         verbose_name_plural = 'Ингредиенты связанные'
         ordering = ['-id']
+        constraints = (
+            models.UniqueConstraint(
+                fields=('recipe', 'ingredients',),
+                name='unique_binding_ingredients',
+            ),
+        )
 
     def __str__(self):
         return f'{self.amount} {self.ingredients}'
