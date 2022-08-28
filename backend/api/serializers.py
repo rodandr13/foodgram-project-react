@@ -1,11 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.db.models import F
-from django.shortcuts import get_object_or_404
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
+from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from drf_extra_fields.fields import Base64ImageField
 
 from recipes.models import Ingredient, Tag, Recipe, IngredientInRecipe
+
 
 User = get_user_model()
 
@@ -133,12 +133,12 @@ class RecipeSerializer(ModelSerializer):
         tags = self.initial_data.get('tags')
         ingredients = self.initial_data.get('ingredients')
         valid_ingredients = []
-        for ing in ingredients:
-            ing_id = ing.get('id')
-            ingredient = Ingredient.objects.filter(id=ing_id)
-            amount = ing.get('amount')
+        for ingredient in ingredients:
+            ingredient_id = ingredient.get('id')
+            selected_ingredient = Ingredient.objects.filter(id=ingredient_id)
+            amount = ingredient.get('amount')
             valid_ingredients.append(
-                {'ingredient': ingredient, 'amount': amount}
+                {'ingredient': selected_ingredient, 'amount': amount}
             )
         data['tags'] = tags
         data['ingredients'] = valid_ingredients
@@ -151,14 +151,12 @@ class RecipeSerializer(ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         recipe = Recipe.objects.create(image=image, **validated_data)
         recipe.tags.set(tags)
-        counter = 0
         for ingredient in ingredients:
             IngredientInRecipe.objects.get_or_create(
                 recipe=recipe,
-                ingredients=ingredient['ingredient'][counter],
+                ingredients=ingredient['ingredient'][0],
                 amount=ingredient['amount']
             )
-            counter += 1
         return recipe
 
     def update(self, recipe, validated_data):
@@ -173,13 +171,12 @@ class RecipeSerializer(ModelSerializer):
         if tags:
             recipe.tags.clear()
             recipe.tags.set(tags)
-        counter = 0
-        for ingredient in ingredients:
-            IngredientInRecipe.objects.get_or_create(
-                recipe=recipe,
-                ingredients=ingredient['ingredient'][counter],
-                amount=ingredient['amount']
-            )
-            counter += 1
+        if ingredients:
+            for ingredient in ingredients:
+                IngredientInRecipe.objects.get_or_create(
+                    recipe=recipe,
+                    ingredients=ingredient['ingredient'][0],
+                    amount=ingredient['amount']
+                )
         recipe.save()
         return recipe
