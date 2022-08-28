@@ -21,6 +21,7 @@ class TagViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = (AdminOrReadOnly,)
+    pagination_class = None
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):
@@ -63,7 +64,7 @@ class UserViewSet(UserViewSet):
             recipe, context={'request': self.request}
         )
         recipe_exist = user_subscribe.filter(id=id).exists()
-        if self.request.method == 'GET' and not recipe_exist:
+        if self.request.method in ['GET', 'POST'] and not recipe_exist:
             user_subscribe.add(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -115,7 +116,7 @@ class RecipeViewSet(ModelViewSet):
             recipe, context={'request': self.request}
         )
         recipe_exist = user_favorites.filter(id=pk).exists()
-        if self.request.method == 'GET' and not recipe_exist:
+        if self.request.method in ['GET', 'POST'] and not recipe_exist:
             user_favorites.add(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -135,7 +136,7 @@ class RecipeViewSet(ModelViewSet):
             recipe, context={'request': self.request}
         )
         recipe_exist = user_cart.filter(id=pk).exists()
-        if self.request.method == 'GET' and not recipe_exist:
+        if self.request.method in ['GET', 'POST'] and not recipe_exist:
             user_cart.add(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 

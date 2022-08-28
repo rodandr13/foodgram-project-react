@@ -85,19 +85,12 @@ class SubscribeSerializer(UserSerializer):
         read_only_fields = '__all__',
 
     def get_recipes_count(self, obj):
-        """ Показывает общее количество рецептов у каждого автора.
-        Args:
-            obj (User): Запрошенный пользователь.
-        Returns:
-            int: Количество рецептов созданных запрошенным пользователем.
-        """
         return obj.recipes.count()
 
 
 class RecipeSerializer(ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer(read_only=True)
-    #ingredients = IngredientSerializer(many=True, read_only=False)
     ingredients = SerializerMethodField()
     is_in_shopping_cart = SerializerMethodField()
     is_favorited = SerializerMethodField()
