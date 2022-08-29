@@ -28,6 +28,7 @@ class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (AdminOrReadOnly,)
+    pagination_class = None
 
 
 class UserViewSet(UserViewSet):
@@ -35,7 +36,6 @@ class UserViewSet(UserViewSet):
     serializer_class = UserSerializer
     add_serializer = SubscribeSerializer
     pagination_class = LimitPageNumberPagination
-    permission_classes = (AuthorStaffOrReadOnly,)
 
     @action(methods=('get', 'post'), detail=False)
     def subscriptions(self, request):
@@ -85,23 +85,22 @@ class RecipeViewSet(ModelViewSet):
         queryset = self.queryset
         tags = self.request.query_params.getlist('tags')
         if tags:
-            queryset = queryset.filter(
-                tags__slug__in=tags).distinct()
-        author = self.request.query_params.get('author')
-        if author:
-            queryset = queryset.filter(author=author)
+            queryset = queryset.filter(tags__slug__in=tags).distinct()
         user = self.request.user
         if user.is_anonymous:
             return queryset
+        author = self.request.query_params.get('author')
+        if author:
+            queryset = queryset.filter(author=author)
         is_in_shopping = self.request.query_params.get('is_in_shopping_cart')
-        if is_in_shopping:
+        if is_in_shopping == '1':
             queryset = queryset.filter(cart=user.id)
-        elif is_in_shopping:
+        elif is_in_shopping == 0:
             queryset = queryset.exclude(cart=user.id)
         is_favorited = self.request.query_params.get('is_favorited')
-        if is_favorited:
+        if is_favorited == '1':
             queryset = queryset.filter(favorite=user.id)
-        if is_favorited:
+        elif is_favorited == 0:
             queryset = queryset.exclude(favorite=user.id)
         return queryset
 

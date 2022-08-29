@@ -159,24 +159,24 @@ class RecipeSerializer(ModelSerializer):
             )
         return recipe
 
-    def update(self, recipe, validated_data):
+    def update(self, instance, validated_data):
         tags = validated_data.get('tags')
         ingredients = validated_data.get('ingredients')
-        recipe.image = validated_data.get('image', recipe.image)
-        recipe.name = validated_data.get('name', recipe.name)
-        recipe.text = validated_data.get('text', recipe.text)
-        recipe.cooking_time = validated_data.get(
-            'cooking_time', recipe.cooking_time
+        instance.image = validated_data.get('image', instance.image)
+        instance.name = validated_data.get('name', instance.name)
+        instance.text = validated_data.get('text', instance.text)
+        instance.cooking_time = validated_data.get(
+            'cooking_time', instance.cooking_time
         )
         if tags:
-            recipe.tags.clear()
-            recipe.tags.set(tags)
+            instance.tags.clear()
+            instance.tags.set(tags)
         if ingredients:
             for ingredient in ingredients:
                 IngredientInRecipe.objects.get_or_create(
-                    recipe=recipe,
+                    recipe=instance,
                     ingredients=ingredient['ingredient'][0],
                     amount=ingredient['amount']
                 )
-        recipe.save()
-        return recipe
+        instance.save()
+        return instance

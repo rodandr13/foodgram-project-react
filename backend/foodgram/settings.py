@@ -134,7 +134,6 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 6,
 }
 
 DJOSER = {
@@ -147,10 +146,8 @@ DJOSER = {
         'current_user': 'api.serializers.UserSerializer',
     },
     'PERMISSIONS': {
-        'user_list': ('api.permissions.AuthorStaffOrReadOnly',),
-        'user': ('api.permissions.AuthorStaffOrReadOnly',),
-        'recipe': ('api.permissions.AuthorStaffOrReadOnly,',),
-        'recipe_list': ('api.permissions.AuthorStaffOrReadOnly',),
+        'user_list': ('rest_framework.permissions.AllowAny',),
+        'user': ('rest_framework.permissions.AllowAny',),
     },
 }
 
