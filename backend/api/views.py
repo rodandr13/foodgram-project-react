@@ -1,20 +1,53 @@
-import csv
-from django.db.models import Sum
-from django.db.models import F
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
+from django.db.models import Sum
 from django.http import HttpResponse
-from rest_framework import status
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from recipes.models import Ingredient, Tag, Recipe, IngredientInRecipe
-from .serializers import TagSerializer, IngredientSerializer, UserSerializer, RecipeSerializer, FavoriteCartRecipeSerializer, SubscribeSerializer
-from .permissions import AdminOrReadOnly, AuthorStaffOrReadOnly
-from .pagination import LimitPageNumberPagination
+from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
+
+from .pagination import LimitPageNumberPagination
+from .permissions import AdminOrReadOnly, AuthorStaffOrReadOnly
+from .serializers import (
+    FavoriteCartRecipeSerializer,
+    IngredientSerializer,
+    RecipeSerializer,
+    SubscribeSerializer,
+    TagSerializer,
+    UserSerializer
+)
 
 User = get_user_model()
+
+
+class PostDelView:
+
+    def post_del_obj(self, user_id, action):
+        user = self.request.user
+        if user.is_anonymous:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        actions = {
+            'subscribe': user.subscribe,
+            'cart': user.carts,
+            'favorite': user.favorites,
+        }
+        current_user = actions[action]
+        queryset = get_object_or_404(self.queryset, id=user_id)
+        serializer = self.add_serializer(
+            queryset, context={'request': self.request}
+        )
+        recipe_exist = current_user.filter(id=user_id).exists()
+        if self.request.method == 'POST' and not recipe_exist:
+            current_user.add(queryset)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if self.request.method == 'DELETE' and recipe_exist:
+            current_user.remove(queryset)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class TagViewSet(ReadOnlyModelViewSet):
@@ -31,50 +64,33 @@ class IngredientViewSet(ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class UserViewSet(UserViewSet):
+class UserViewSet(UserViewSet, PostDelView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     add_serializer = SubscribeSerializer
     pagination_class = LimitPageNumberPagination
 
-    @action(methods=('get', 'post'), detail=False)
+    @action(methods=('GET',), detail=False)
     def subscriptions(self, request):
-        print('++++++++++++')
-        print('test2')
         user = self.request.user
         if user.is_anonymous:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         authors = user.subscribe.all()
         pages = self.paginate_queryset(authors)
         serializer = SubscribeSerializer(
-            pages, many=True, context={'request': request}
+            pages,
+            many=True,
+            context={'request': request}
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(methods=('get', 'post', 'delete'), detail=True)
+    @action(methods=('POST', 'DELETE'), detail=True)
     def subscribe(self, request, id):
-        print('test')
-        user = request.user
-        if user.is_anonymous:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-        user_subscribe = user.subscribe
-        recipe = get_object_or_404(self.queryset, id=id)
-        print(recipe)
-        serializer = self.add_serializer(
-            recipe, context={'request': self.request}
-        )
-        recipe_exist = user_subscribe.filter(id=id).exists()
-        if self.request.method in ['GET', 'POST'] and not recipe_exist:
-            user_subscribe.add(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if self.request.method == 'DELETE' and recipe_exist:
-            user_subscribe.remove(recipe)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        action = 'subscribe'
+        return self.post_del_obj(id, action)
 
 
-class RecipeViewSet(ModelViewSet):
+class RecipeViewSet(ModelViewSet, PostDelView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = (AuthorStaffOrReadOnly,)
@@ -104,47 +120,17 @@ class RecipeViewSet(ModelViewSet):
             queryset = queryset.exclude(favorite=user.id)
         return queryset
 
-    @action(detail=True, methods=["get", 'post', "delete"], )
+    @action(detail=True, methods=('POST', 'DELETE'), )
     def favorite(self, request, pk=None):
-        user = request.user
-        if user.is_anonymous:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-        user_favorites = user.favorites
-        recipe = get_object_or_404(self.queryset, id=pk)
-        serializer = self.add_serializer(
-            recipe, context={'request': self.request}
-        )
-        recipe_exist = user_favorites.filter(id=pk).exists()
-        if self.request.method in ['GET', 'POST'] and not recipe_exist:
-            user_favorites.add(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        action = 'favorite'
+        return self.post_del_obj(pk, action)
 
-        if self.request.method == 'DELETE' and recipe_exist:
-            user_favorites.remove(recipe)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=['get', 'post', 'delete'],)
+    @action(detail=True, methods=('POST', 'DELETE'),)
     def shopping_cart(self, request, pk):
-        user = request.user
-        if user.is_anonymous:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-        user_cart = user.carts
-        recipe = get_object_or_404(self.queryset, id=pk)
-        serializer = self.add_serializer(
-            recipe, context={'request': self.request}
-        )
-        recipe_exist = user_cart.filter(id=pk).exists()
-        if self.request.method in ['GET', 'POST'] and not recipe_exist:
-            user_cart.add(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        action = 'cart'
+        return self.post_del_obj(pk, action)
 
-        if self.request.method == 'DELETE' and recipe_exist:
-            user_cart.remove(recipe)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    @action(methods=('get',), detail=False)
+    @action(methods=('GET',), detail=False)
     def download_shopping_cart(self, request):
         user = request.user
         if not user.carts.exists():
@@ -152,17 +138,14 @@ class RecipeViewSet(ModelViewSet):
         ingredients = IngredientInRecipe.objects.filter(
             recipe__in=(user.carts.values('id'))
         ).values(
-            ingredient=F('ingredients__name'),
-            measure=F('ingredients__measurement_unit')
+            'ingredients__name',
+            'ingredients__measurement_unit'
         ).annotate(amount=Sum('amount'))
-        shopping_list = []
-        for ing in ingredients:
-            shopping_list.append([ing["ingredient"], ing["amount"], ing["measure"]])
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = ('attachment;'
-                                           'filename="Shoppingcart.csv"')
-        response.write(u'\ufeff'.encode('utf8'))
-        writer = csv.writer(response)
-        for item in shopping_list:
-            writer.writerow(item)
-        return response
+        shop_list = 'Список покупок: \n'
+        for ingredient in ingredients:
+            shop_list += (
+                f"{ingredient['ingredients__name']} — "
+                f"{ingredient['amount']} "
+                f"({ingredient['ingredients__measurement_unit']})\n"
+            )
+        return HttpResponse(shop_list, content_type='text/plain')

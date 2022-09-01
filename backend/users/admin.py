@@ -11,4 +11,3 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('first_name', 'email',)
     fieldsets = []
     save_on_top = True
-

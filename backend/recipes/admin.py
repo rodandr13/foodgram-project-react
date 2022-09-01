@@ -1,12 +1,13 @@
 from django.contrib import admin
 
-from .models import IngredientInRecipe, Tag, Recipe, Ingredient
+from .models import Ingredient, IngredientInRecipe, Recipe, Tag
 
 EMPTY_MESSAGE = '-пусто-'
 
 
 class IngredientInRecipeInline(admin.TabularInline):
     model = IngredientInRecipe
+    min_num = 1
 
 
 @admin.register(IngredientInRecipe)
@@ -25,10 +26,14 @@ class IngredientAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'author',)
+    list_display = ('name', 'author', 'is_favorited')
     search_fields = ('author', 'name', 'tags',)
+    list_filter = ('author', 'name', 'tags')
     empty_value_display = EMPTY_MESSAGE
     inlines = (IngredientInRecipeInline,)
+
+    def is_favorited(self, obj):
+        return obj.favorite.count()
 
 
 @admin.register(Tag)

@@ -1,11 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.db.models import F
-
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
+from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
-from recipes.models import Ingredient, Tag, Recipe, IngredientInRecipe
-
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 
 User = get_user_model()
 
@@ -13,22 +11,19 @@ User = get_user_model()
 class TagSerializer(ModelSerializer):
     class Meta:
         model = Tag
-        fields = '__all__'
-        read_only_fields = ('__all__',)
+        fields = 'id', 'name', 'color', 'slug'
 
 
 class IngredientSerializer(ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = '__all__'
-        read_only_fields = ('__all__',)
+        fields = 'id', 'name', 'measurement_unit'
 
 
 class FavoriteCartRecipeSerializer(ModelSerializer):
     class Meta:
         model = Recipe
         fields = 'id', 'name', 'image', 'cooking_time'
-        read_only_fields = ('__all__',)
 
 
 class UserSerializer(ModelSerializer):
@@ -61,7 +56,7 @@ class UserSerializer(ModelSerializer):
 
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user
-        if not user.is_authenticated or (user == obj):
+        if user.is_anonymous or (user == obj):
             return False
         return user.subscribe.filter(id=obj.id).exists()
 
@@ -112,28 +107,37 @@ class RecipeSerializer(ModelSerializer):
         )
 
     def get_ingredients(self, obj):
+        amount = IngredientInRecipe.objects.filter(recipe=obj).values('amount')
         ingredients = obj.ingredients.values(
-            'id', 'name', 'measurement_unit', amount=F('ingredient__amount')
+            'id', 'name', 'measurement_unit', amount=amount
         )
         return ingredients
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context.get('request').user
-        if not user.is_authenticated:
+        if user.is_anonymous:
             return False
         return user.carts.filter(id=obj.id).exists()
 
     def get_is_favorited(self, obj):
         user = self.context.get('request').user
-        if not user.is_authenticated:
+        if user.is_anonymous:
             return False
         return user.favorites.filter(id=obj.id).exists()
 
     def validate(self, data):
         tags = self.initial_data.get('tags')
         ingredients = self.initial_data.get('ingredients')
+        if not ingredients:
+            raise serializers.ValidationError(
+                "Необходимо добавить список ингредиентов"
+            )
         valid_ingredients = []
         for ingredient in ingredients:
+            if ingredients.count(ingredient):
+                raise serializers.ValidationError(
+                    'Ингридиенты должны быть уникальными'
+                )
             ingredient_id = ingredient.get('id')
             selected_ingredient = Ingredient.objects.filter(id=ingredient_id)
             amount = ingredient.get('amount')
@@ -170,7 +174,7 @@ class RecipeSerializer(ModelSerializer):
         )
         if tags:
             instance.tags.clear()
-            instance.tags.set(tags)
+            instance.tags.add(*tags)
         if ingredients:
             for ingredient in ingredients:
                 IngredientInRecipe.objects.get_or_create(
