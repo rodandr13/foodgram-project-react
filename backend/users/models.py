@@ -4,7 +4,7 @@ from django.db import models
 MAX_LEN_CHARFIELD = 200
 
 
-class CustomUser(AbstractUser):
+class FoodgramUser(AbstractUser):
     email = models.EmailField(
         'Email',
         max_length=MAX_LEN_CHARFIELD,

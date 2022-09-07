@@ -2,14 +2,15 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from djoser.views import UserViewSet
+
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
+from djoser.views import UserViewSet
 
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from .pagination import LimitPageNumberPagination
 from .permissions import AdminOrReadOnly, AuthorStaffOrReadOnly
 from .serializers import (
@@ -24,9 +25,9 @@ from .serializers import (
 User = get_user_model()
 
 
-class PostDelView:
+class PostDeleteView:
 
-    def post_del_obj(self, user_id, action):
+    def __post_del_obj__(self, user_id, action):
         user = self.request.user
         if user.is_anonymous:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -64,7 +65,7 @@ class IngredientViewSet(ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class UserViewSet(UserViewSet, PostDelView):
+class UserViewSet(UserViewSet, PostDeleteView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     add_serializer = SubscribeSerializer
@@ -87,15 +88,25 @@ class UserViewSet(UserViewSet, PostDelView):
     @action(methods=('POST', 'DELETE'), detail=True)
     def subscribe(self, request, id):
         action = 'subscribe'
-        return self.post_del_obj(id, action)
+        return self.__post_del_obj__(id, action)
 
 
-class RecipeViewSet(ModelViewSet, PostDelView):
+class RecipeViewSet(ModelViewSet, PostDeleteView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = (AuthorStaffOrReadOnly,)
     add_serializer = FavoriteCartRecipeSerializer
     pagination_class = LimitPageNumberPagination
+
+    @staticmethod
+    def __ingredientInRecipeFilter__(user):
+        ingredients = IngredientInRecipe.objects.filter(
+            recipe__in=(user.carts.values('id'))
+        ).values(
+            'ingredients__name',
+            'ingredients__measurement_unit'
+        ).annotate(amount=Sum('amount'))
+        return ingredients
 
     def get_queryset(self):
         queryset = self.queryset
@@ -111,36 +122,31 @@ class RecipeViewSet(ModelViewSet, PostDelView):
         is_in_shopping = self.request.query_params.get('is_in_shopping_cart')
         if is_in_shopping == '1':
             queryset = queryset.filter(cart=user.id)
-        elif is_in_shopping == 0:
+        elif is_in_shopping == '0':
             queryset = queryset.exclude(cart=user.id)
         is_favorited = self.request.query_params.get('is_favorited')
         if is_favorited == '1':
             queryset = queryset.filter(favorite=user.id)
-        elif is_favorited == 0:
+        elif is_favorited == '0':
             queryset = queryset.exclude(favorite=user.id)
         return queryset
 
-    @action(detail=True, methods=('POST', 'DELETE'), )
+    @action(detail=True, methods=('POST', 'DELETE'))
     def favorite(self, request, pk=None):
         action = 'favorite'
-        return self.post_del_obj(pk, action)
+        return self.__post_del_obj__(pk, action)
 
-    @action(detail=True, methods=('POST', 'DELETE'),)
+    @action(detail=True, methods=('POST', 'DELETE'))
     def shopping_cart(self, request, pk):
         action = 'cart'
-        return self.post_del_obj(pk, action)
+        return self.__post_del_obj__(pk, action)
 
     @action(methods=('GET',), detail=False)
     def download_shopping_cart(self, request):
         user = request.user
         if not user.carts.exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        ingredients = IngredientInRecipe.objects.filter(
-            recipe__in=(user.carts.values('id'))
-        ).values(
-            'ingredients__name',
-            'ingredients__measurement_unit'
-        ).annotate(amount=Sum('amount'))
+        ingredients = self.__ingredientInRecipeFilter__(user)
         shop_list = 'Список покупок: \n'
         for ingredient in ingredients:
             shop_list += (

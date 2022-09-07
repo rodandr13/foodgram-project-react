@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import CustomUser
+from .models import FoodgramUser
 
 
-@admin.register(CustomUser)
+@admin.register(FoodgramUser)
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'first_name', 'last_name', 'email',)
     search_fields = ('username', 'email',)
