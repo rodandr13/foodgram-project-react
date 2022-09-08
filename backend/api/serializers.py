@@ -108,10 +108,9 @@ class RecipeSerializer(ModelSerializer):
         )
 
     def get_ingredients(self, obj):
-        ingredients = obj.ingredients.values(
+        return obj.ingredients.values(
             'id', 'name', 'measurement_unit', amount=F('ingredient__amount')
         )
-        return ingredients
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context.get('request').user
