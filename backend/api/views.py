@@ -100,14 +100,13 @@ class RecipeViewSet(ModelViewSet, PostDeleteView):
     pagination_class = LimitPageNumberPagination
 
     @staticmethod
-    def __ingredientInRecipeFilter__(user):
-        ingredients = IngredientInRecipe.objects.filter(
+    def __ingredien_in_recipe_filter__(user):
+        return IngredientInRecipe.objects.filter(
             recipe__in=(user.carts.values('id'))
         ).values(
             'ingredients__name',
             'ingredients__measurement_unit'
         ).annotate(amount=Sum('amount'))
-        return ingredients
 
     def get_queryset(self):
         queryset = self.queryset
@@ -147,7 +146,7 @@ class RecipeViewSet(ModelViewSet, PostDeleteView):
         user = request.user
         if not user.carts.exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        ingredients = self.__ingredientInRecipeFilter__(user)
+        ingredients = self.__ingredien_in_recipe_filter__(user)
         shop_list = 'Список покупок: \n'
         for ingredient in ingredients:
             shop_list += (
