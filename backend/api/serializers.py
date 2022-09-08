@@ -151,6 +151,7 @@ class RecipeSerializer(ModelSerializer):
                 )
         data['tags'] = tags
         data['ingredients'] = ingredients_list
+        data['author'] = self.context.get('request').user
         return data
 
     def create(self, validated_data):
