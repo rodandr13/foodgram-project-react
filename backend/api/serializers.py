@@ -182,4 +182,5 @@ class RecipeSerializer(ModelSerializer):
                     ingredients=ingredient['ingredient'][0],
                     amount=ingredient['amount']
                 )
+        instance.save()
         return instance

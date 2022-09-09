@@ -18,7 +18,7 @@ services:
       - ./.env
 
   backend:
-    image: andr13/backend_foodgram:latest
+    image: andr13/backend_foodgram:1.0
     restart: always
     volumes:
       - static_value:/app/static/
@@ -30,7 +30,7 @@ services:
       - ./.env
 
   frontend:
-    image: andr13/frontent_foodgram:latest
+    image: andr13/frontent_foodgram:1.0
     volumes:
       - result_build:/app/result_build/build/
 
