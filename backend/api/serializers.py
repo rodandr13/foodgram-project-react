@@ -140,10 +140,6 @@ class RecipeSerializer(ModelSerializer):
                     id=ingredient_id
                 )
                 amount = ingredient.get('amount')
-                if amount <= 0:
-                    raise serializers.ValidationError(
-                        'Укажите количество ингредиентов, должно быть > 0'
-                    )
                 ingredients_id.append(ingredient_id)
                 ingredients_list.append(
                     {'ingredient': selected_ingredient, 'amount': amount}
