@@ -1,7 +1,10 @@
+from string import hexdigits
+
 from django.contrib.auth import get_user_model
 from django.db.models import F
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
@@ -13,6 +16,15 @@ class TagSerializer(ModelSerializer):
     class Meta:
         model = Tag
         fields = 'id', 'name', 'color', 'slug'
+
+    def validate_color(self, color):
+        color = str(color).strip('#')
+        if not set(color).issubset(hexdigits):
+            raise ValidationError(
+                f'Цвет {color} должен быть шестнадцатиричным'
+            )
+        return f'#{color}'
+
 
 
 class IngredientSerializer(ModelSerializer):
