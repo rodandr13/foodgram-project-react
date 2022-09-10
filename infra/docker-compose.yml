@@ -49,3 +49,5 @@ services:
       - frontend
     env_file:
       - ./.env
+
+#1
