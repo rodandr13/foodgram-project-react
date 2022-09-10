@@ -127,7 +127,7 @@ class RecipeSerializer(ModelSerializer):
     def validate(self, data):
         tags = self.initial_data.get('tags')
         ingredients = self.initial_data.get('ingredients')
-        ingredients_list = []
+        ingredients_valid = []
         ingredients_id = []
         if ingredients:
             for ingredient in ingredients:
@@ -141,11 +141,11 @@ class RecipeSerializer(ModelSerializer):
                 )
                 amount = ingredient.get('amount')
                 ingredients_id.append(ingredient_id)
-                ingredients_list.append(
+                ingredients_valid.append(
                     {'ingredient': selected_ingredient, 'amount': amount}
                 )
         data['tags'] = tags
-        data['ingredients'] = ingredients_list
+        data['ingredients'] = ingredients_valid
         data['author'] = self.context.get('request').user
         return data
 
