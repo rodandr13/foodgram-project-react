@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from colorfield.fields import ColorField
 
 User = get_user_model()
 MAX_LEN_CHARFIELD = 200
@@ -35,10 +36,7 @@ class Tag(models.Model):
         'Название тега',
         max_length=MAX_LEN_CHARFIELD,
     )
-    color = models.CharField(
-        'Цвет HEX',
-        max_length=7,
-    )
+    color = ColorField(default='#999999',)
     slug = models.SlugField(
         'Слаг тега',
         max_length=MAX_LEN_CHARFIELD,
