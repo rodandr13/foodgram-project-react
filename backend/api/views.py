@@ -65,6 +65,14 @@ class IngredientViewSet(ReadOnlyModelViewSet):
     permission_classes = (AdminOrReadOnly,)
     pagination_class = None
 
+    def get_queryset(self):
+        queryset = self.queryset
+        name = self.request.query_params.get('name')
+        name = name.lower()
+        if name:
+            queryset = list(queryset.filter(name__startswith=name))
+        return queryset
+
 
 class UserViewSet(UserViewSet, PostDeleteView):
     queryset = User.objects.all()
