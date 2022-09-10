@@ -74,6 +74,9 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
+            sudo docker-compose stop
+            sudo docker-compose down -v
+            sudo docker-compose rm web
             touch .env
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
             echo DB_NAME=${{ secrets.DB_NAME }} >> .env
@@ -81,13 +84,7 @@ jobs:
             echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
             echo DB_HOST=${{ secrets.DB_HOST }} >> .env
             echo DB_PORT=${{ secrets.DB_PORT }} >> .env
-            sudo docker-compose stop
-            sudo docker rm ya-admin_backend_1
-            sudo docker rmi ${{ secrets.DOCKER_USERNAME }}/frontent_foodgram
-            sudo docker rmi ${{ secrets.DOCKER_USERNAME }}/backend_foodgram
             sudo docker-compose up -d --build
-            sudo docker-compose exec -T backend python manage.py migrate
-            sudo docker-compose exec -T backend python manage.py collectstatic --no-input
   send_message:
     runs-on: ubuntu-latest
     needs: deploy
@@ -99,4 +96,4 @@ jobs:
         token: ${{ secrets.TELEGRAM_TOKEN }}
         message: ${{ github.workflow }} успешно выполнен!
 
-#9
+#6
